@@ -77,6 +77,7 @@ Everything else (WhatsApp intake, follow-up automation, dossier export, dashboar
 
 ## 7. Working conventions for Claude Code sessions
 
+- **All feature work follows the cycle in `docs/WORKFLOW.md`** (run the `feature-cycle` skill): evaluate → select one slice → data model → design → artifact gate → build → review. One slice per cycle; artifacts live in `docs/features/<slug>/`; tempting extras go to `docs/BACKLOG.md`, never into the running slice. Do not write feature code outside an active cycle whose artifact gate has passed.
 - Reference the FR/NFR ID a change implements in commit messages and PR descriptions where applicable (e.g. `FR-11: add vendor/amount/date extraction`). See the `trace-requirement` skill.
 - Before adding a new intake channel or a new module, check `.claude/skills/` for a matching skill (`add-intake-channel`, `scaffold-module`) rather than freehand-scaffolding — they encode the raw/extracted and multi-tenant conventions above.
 - Run the `check-multi-tenant` skill's checklist on any new query or endpoint that touches a core entity, before considering it done.
