@@ -9,9 +9,8 @@ from sqlalchemy.orm import Session
 from app.container import Deps
 from app.models import (
     Attachment,
-    Client,
-    ExtractedData,
     InboundItem,
+    ExtractedData,
     Organization,
     Source,
     User,
@@ -73,34 +72,7 @@ def seed_if_empty(db: Session, deps: Deps) -> None:
     for channel in ("email", "upload", "whatsapp"):
         db.add(Source(org_id=org.id, channel=channel, config={}))
 
-    def client(name, email=None, phone=None, vat=None, software=None, since=None):
-        c = Client(
-            org_id=org.id,
-            name=name,
-            email=email,
-            phone=phone,
-            vat_number=vat,
-            bookkeeping_software=software,
-            client_since=since,
-        )
-        db.add(c)
-        db.flush()
-        return c
-
-    dewit = client(
-        "De Wit Consulting BV",
-        email="boekhouding@dewitconsulting.be",
-        vat="BE 0648.925.310",
-        software="Yuki",
-        since=datetime(2023, 3, 1),
-    )
-    janssens = client("Janssens Bouw", email="info@janssensbouw.be", software="Silverfin")
-    peeters = client(
-        "Peeters & Partners", email="admin@peeters-partners.be", software="Exact Online"
-    )
-
     def item(
-        cl,
         channel,
         filename,
         subject,
@@ -108,7 +80,7 @@ def seed_if_empty(db: Session, deps: Deps) -> None:
         status,
         *,
         sender=None,
-        match="matched",
+        match="unmatched",
         external_ref=None,
         source_url=None,
         source_system=None,
@@ -119,19 +91,18 @@ def seed_if_empty(db: Session, deps: Deps) -> None:
             org_id=org.id,
             channel=channel,
             external_ref=external_ref or f"seed-{filename}-{received.timestamp()}",
-            sender=sender or (cl.email if cl else "onbekend@voorbeeld.be"),
+            sender=sender or "onbekend@voorbeeld.be",
             subject=subject,
             received_at=received,
             status=status,
             match_status=match,
-            client_id=cl.id if cl else None,
             source_url=source_url,
             source_system=source_system,
         )
         db.add(it)
         db.flush()
         raw = content or _facsimile(
-            subject, cl.name if cl else "Onbekend", "€ 0,00", "juni 2026", "BE —"
+            subject, "Onbekend", "€ 0,00", "juni 2026", "BE —"
         )
         key = deps.storage.save(org.id, filename, raw)
         db.add(
@@ -165,12 +136,12 @@ def seed_if_empty(db: Session, deps: Deps) -> None:
 
     # ---- Review queue (needs_review), mirroring the design's dashboard rows ----
     telenet = item(
-        dewit,
         "email",
         "factuur_telenet_jun.pdf",
         "Telenet BVBA",
         now - timedelta(minutes=8),
         "needs_review",
+        sender="facturatie@telenet.be",
         external_ref="A-20614",
         source_url="https://outlook.office.com/mail/inbox/id/A-20614",
         source_system="Outlook",

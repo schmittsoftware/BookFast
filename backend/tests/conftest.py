@@ -12,7 +12,7 @@ from app.config import Settings
 from app.container import Deps
 from app.db import Base
 from app.interfaces import ExtractionResult, FieldExtraction
-from app.models import Client, Organization, User
+from app.models import Organization, User
 
 
 class FakeExtractor:
@@ -84,9 +84,3 @@ def make_org(db, slug: str, threshold: float = 0.85) -> Organization:
     db.commit()
     return org
 
-
-def make_client(db, org: Organization, email: str) -> Client:
-    client = Client(org_id=org.id, name=f"Klant {email}", email=email)
-    db.add(client)
-    db.commit()
-    return client

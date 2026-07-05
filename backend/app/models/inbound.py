@@ -4,7 +4,7 @@ from sqlalchemy import JSON, DateTime, Float, ForeignKey, Integer, String, Text,
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, _id, utcnow
-from app.models.client import Client
+
 
 
 class InboundItem(Base):
@@ -25,9 +25,7 @@ class InboundItem(Base):
 
     status: Mapped[str] = mapped_column(String(30), default="received")
     match_status: Mapped[str] = mapped_column(String(30), default="unmatched")
-    client_id: Mapped[str | None] = mapped_column(ForeignKey("clients.id"), nullable=True)
 
-    client: Mapped[Client | None] = relationship()
     attachments: Mapped[list["Attachment"]] = relationship(back_populates="item")
     extractions: Mapped[list["ExtractedData"]] = relationship(back_populates="item")
 

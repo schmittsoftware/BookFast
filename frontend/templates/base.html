@@ -41,17 +41,7 @@
         <span>Review</span>
         {% if nav.review %}<span class="num nav-count pill-amber">{{ nav.review }}</span>{% endif %}
       </a>
-      <details class="nav-drawer" {% if active in ['klanten', 'dossiers'] %}open{% endif %} style="margin:0;padding:0">
-        <summary class="nav-item {% if active in ['klanten', 'dossiers'] %}active{% endif %}">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.4" stroke="currentColor" stroke-width="1.6"/><path d="M3.5 19c.8-3 2.9-4.5 5.5-4.5s4.7 1.5 5.5 4.5M16 5.5a3.4 3.4 0 0 1 0 5M18.5 19c-.4-1.9-1.3-3.2-2.6-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-          <span>Klanten</span>
-          <svg class="nav-chevron {% if active in ['klanten', 'dossiers'] %}open{% endif %}" width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </summary>
-        <div class="subnav">
-          <a class="subnav-item {% if active == 'klanten' %}active{% endif %}" href="/klanten">Overzicht</a>
-          <a class="subnav-item {% if active == 'dossiers' %}active{% endif %}" href="/dossiers">Dossiers</a>
-        </div>
-      </details>
+
 
       <a class="nav-item disabled" title="Volgt na pilotfeedback">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 20V9M12 20V4M19 20v-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>

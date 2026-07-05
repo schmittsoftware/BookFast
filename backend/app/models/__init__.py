@@ -1,6 +1,5 @@
 from app.models.audit import AuditLog
 from app.models.base import Base, _id, utcnow
-from app.models.client import Client
 from app.models.inbound import Attachment, Correction, ExtractedData, InboundItem
 from app.models.organization import Organization
 from app.models.source import Source
@@ -13,7 +12,6 @@ __all__ = [
     "Organization",
     "Source",
     "User",
-    "Client",
     "InboundItem",
     "Attachment",
     "ExtractedData",

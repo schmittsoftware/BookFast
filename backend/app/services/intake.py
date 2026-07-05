@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.container import Deps
-from app.models import Attachment, Client, InboundItem, Organization
+from app.models import Attachment, InboundItem, Organization
 from app.services import audit, processing
 
 
@@ -84,19 +84,5 @@ def ingest(
 
 
 def _match_sender(db: Session, org: Organization, item: InboundItem, sender: str) -> None:
-    """FR-06/FR-07: match on known email/phone; unknown senders queue for
-    one-time human confirmation instead of guessing."""
-    if not sender:
-        item.match_status = "unmatched"
-        return
-    client = db.execute(
-        select(Client).where(
-            Client.org_id == org.id,
-            (Client.email == sender) | (Client.phone == sender),
-        )
-    ).scalar_one_or_none()
-    if client is not None:
-        item.client_id = client.id
-        item.match_status = "matched"
-    else:
-        item.match_status = "unconfirmed"
+    """FR-06/FR-07: Sender matching is currently disabled since Client model is removed."""
+    item.match_status = "unmatched"
