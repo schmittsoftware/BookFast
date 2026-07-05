@@ -152,6 +152,12 @@ def dashboard(
     return templates.TemplateResponse(request, "dashboard.html", ctx)
 
 
+@router.get("/dashboard")
+def dashboard_redirect():
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/", status_code=303)
+
+
 @router.get("/review", response_class=HTMLResponse)
 def review_index(
     db: Session = Depends(get_db),
