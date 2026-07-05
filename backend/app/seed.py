@@ -1,7 +1,7 @@
 """Demo seed for the pilot demo/dev environment. Creates one kantoor with
 realistic in-flight data so every screen has content. Only runs on an empty DB."""
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -9,14 +9,13 @@ from sqlalchemy.orm import Session
 from app.container import Deps
 from app.models import (
     Attachment,
-    InboundItem,
     ExtractedData,
+    InboundItem,
     Organization,
     Source,
     User,
     utcnow,
 )
-from app.services import audit
 
 
 def _facsimile(vendor: str, client: str, amount: str, date_label: str, vat: str) -> bytes:
@@ -101,9 +100,7 @@ def seed_if_empty(db: Session, deps: Deps) -> None:
         )
         db.add(it)
         db.flush()
-        raw = content or _facsimile(
-            subject, "Onbekend", "€ 0,00", "juni 2026", "BE —"
-        )
+        raw = content or _facsimile(subject, "Onbekend", "€ 0,00", "juni 2026", "BE —")
         key = deps.storage.save(org.id, filename, raw)
         db.add(
             Attachment(

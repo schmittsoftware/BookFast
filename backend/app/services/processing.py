@@ -6,7 +6,6 @@ a pending_review ExtractedData with an error note."""
 
 import logging
 
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.container import Deps

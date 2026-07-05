@@ -83,13 +83,13 @@ def approve_item(db: Session, org: Organization, item: InboundItem, *, approved_
     for extraction in item.extractions:
         if extraction.status == "pending_review":
             extraction.status = "reviewed"
-            
+
     # Auto-resolve related follow-up actions if case is now complete
     if item.case_id:
         from app.models import Case
         from app.services import followup
         from app.services.dossier import summarize
-        
+
         case = db.execute(select(Case).where(Case.id == item.case_id)).scalar_one_or_none()
         if case:
             s = summarize(db, org, case)

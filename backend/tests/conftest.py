@@ -83,4 +83,3 @@ def make_org(db, slug: str, threshold: float = 0.85) -> Organization:
     db.add(User(org_id=org.id, name=f"Tester {slug}", initials="TT"))
     db.commit()
     return org
-

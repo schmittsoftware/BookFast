@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.container import Deps
 from app.models import Attachment, InboundItem, Organization, User, utcnow
-from app.services import intake, review
+from app.services import review
 from app.web.deps import get_db, get_deps, get_org, get_user
 
 router = APIRouter()
@@ -126,6 +126,7 @@ def dashboard(
 @router.get("/dashboard")
 def dashboard_redirect():
     from fastapi.responses import RedirectResponse
+
     return RedirectResponse(url="/", status_code=303)
 
 

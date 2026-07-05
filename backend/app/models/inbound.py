@@ -6,7 +6,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, _id, utcnow
 
 
-
 class InboundItem(Base):
     __tablename__ = "inbound_items"
     __table_args__ = (
