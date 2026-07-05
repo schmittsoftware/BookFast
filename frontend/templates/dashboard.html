@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · BoekVastAI{% endblock %}
+{% block content %}
+<div class="page">
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:26px">
+    <div>
+      <h1 class="page-title" style="font-size:25px">Goeiemorgen, {{ user.name }}</h1>
+      <p style="margin:6px 0 0;font-size:13.5px;color:var(--muted)">{{ today_label }} ·
+        <span style="color:var(--red);font-weight:500">{{ attention }} items</span> vragen vandaag je aandacht
+      </p>
+    </div>
+    <div style="display:flex;gap:9px">
+      <div class="btn ghost">Deze week
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+          <path d="M6 9l6 6 6-6" stroke="#9A9D91" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+      <div class="btn primary">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+          <path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14" stroke="#fff" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" />
+        </svg>
+        Weekrapport
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI row (FR-50/51) -->
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span class="kpi-label">Tijd bespaard</span>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="8.5" stroke="#0F5C43" stroke-width="1.6" />
+          <path d="M12 7.5V12l3 2" stroke="#0F5C43" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+      <div class="num kpi-value">{{ stats.time_saved_label }}</div>
+      <div class="kpi-delta">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+          <path d="M4 15l6-6 4 4 6-7" stroke="#2F8A5B" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" />
+        </svg>
+        {% if stats.minutes_saved >= stats.minutes_saved_prev %}+{% else %}-{% endif %}{{ stats.time_saved_delta_label
+        }} vs vorige week
+      </div>
+    </div>
+    <div class="kpi">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span class="kpi-label">Documenten verwerkt</span>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+          <path d="M7 3h7l4 4v14H7z" stroke="#0F5C43" stroke-width="1.6" stroke-linejoin="round" />
+          <path d="M14 3v4h4" stroke="#0F5C43" stroke-width="1.6" stroke-linejoin="round" />
+        </svg>
+      </div>
+      <div class="num kpi-value" style="font-size:30px">{{ stats.docs_processed }}</div>
+      <div class="kpi-foot">deze week, alle kanalen</div>
+    </div>
+    <div class="kpi">
+      <span class="kpi-label">Automatisch verwerkt</span>
+      <div class="num kpi-value" style="font-size:30px">{{ stats.auto_pct }}<span
+          style="font-size:18px;color:var(--faint)">%</span></div>
+      <div class="meter">
+        <div style="width:{{ stats.auto_pct }}%"></div>
+      </div>
+      <div class="kpi-foot">{{ stats.auto_count }} auto · {{ stats.manual_count }} handmatig behandeld</div>
+    </div>
+    <div class="kpi">
+      <span class="kpi-label">Nauwkeurigheid</span>
+      <div class="num kpi-value" style="font-size:30px">{{ stats.accuracy_pct }}<span
+          style="font-size:18px;color:var(--faint)">%</span></div>
+      <div class="meter">
+        <div style="width:{{ stats.accuracy_pct }}%;background:var(--success)"></div>
+      </div>
+      <div class="kpi-foot">velden correct vóór menselijke correctie</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="col">
+      <!-- review queue (FR-13/20) -->
+      <div class="card">
+        <div class="card-h">
+          <span class="card-title">Wacht op review
+            {% if queue_total %}<span class="num pill amber" style="background:var(--amber-chip)">{{ queue_total
+              }}</span>{% endif %}
+          </span>
+          <a href="/review" style="font-size:12.5px;color:var(--green);font-weight:600">Alles bekijken →</a>
+        </div>
+        {% for item in queue %}
+        {% set worst = lowest_field(item) %}
+        {% set ext = item.extractions[0] if item.extractions else None %}
+        <a class="row clickable" href="/review/{{ item.id }}">
+          {% if ext and ext.error %}
+          <div class="row-icon alert"><svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
+            </svg></div>
+          {% elif ext and ext.doc_type == 'vraag' %}
+          <div class="row-icon chat"><svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M21 11.5a8.4 8.4 0 0 1-11.9 7.6L3 21l1.9-6.1A8.5 8.5 0 1 1 21 11.5z" stroke="currentColor"
+                stroke-width="1.6" stroke-linejoin="round" />
+            </svg></div>
+          {% elif item.match_status != 'matched' %}
+          <div class="row-icon alert"><svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
+            </svg></div>
+          {% else %}
+          <div class="row-icon doc"><svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M7 3h7l4 4v14H7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+              <path d="M14 3v4h4M9.5 13h5M9.5 16.5h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            </svg></div>
+          {% endif %}
+          <div class="row-main">
+            <div class="row-title">{{ ext.doc_type | capitalize if ext else 'Document' }}{% if item.subject %} · {{
+              item.subject }}{% endif %}</div>
+            <div class="row-sub">{{ item.client.name if item.client else 'Afzender niet gematcht' }} · {{
+              item.received_at | ago }}</div>
+          </div>
+          {% if item.match_status != 'matched' %}
+          <span class="badge red">Afzender onbekend</span>
+          {% elif ext and ext.error %}
+          <span class="badge red">Extractie mislukt</span>
+          {% elif worst and worst.confidence is not none %}
+          <span class="badge amber">{{ worst.label }} {{ (worst.confidence * 100) | round | int }}%</span>
+          {% else %}
+          <span class="badge amber">Classificatie onzeker</span>
+          {% endif %}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M9 6l6 6-6 6" stroke="#C4BFB2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </a>
+        {% else %}
+        <div class="row">
+          <div class="row-sub">Niets te reviewen — alles verwerkt.</div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- deadline-bewaking (komende 14 dagen) -->
+      <div class="card">
+        <div class="card-h">
+          <span class="card-title">Deadlines · komende 14 dagen
+            {% if deadlines_total %}<span class="num pill amber" style="background:var(--amber-chip)">{{ deadlines_total
+              }}</span>{% endif %}
+          </span>
+          <a href="/deadlines" style="font-size:12.5px;color:var(--green);font-weight:600">Alles bekijken →</a>
+        </div>
+        {% for e in deadlines_upcoming %}
+        <a class="row clickable" href="/deadlines/{{ e.client.id }}">
+          <div class="date-slot">
+            <div class="num"
+              style="font-size:16px;font-weight:600;{% if e.days_left <= 7 %}color:var(--red){% else %}color:var(--amber){% endif %}">
+              {{ e.due.strftime('%d/%m') }}</div>
+            <div style="font-size:10px;color:var(--faint)">{% if e.days_left == 0 %}vandaag{% else %}{{ e.days_left
+              }}d{% endif %}</div>
+          </div>
+          <div class="row-main">
+            <div class="row-title" style="font-size:13px">{{ e.label }} · {{ e.period }}</div>
+            <div class="row-sub">
+              {{ e.client.name }}
+              {% if e.dossier_incomplete %} · <span style="color:var(--amber)">dossier onvolledig</span>{% endif %}
+            </div>
+          </div>
+          {% if e.open_action and e.open_action.status == 'draft' %}
+          <span class="pill amber">Concept klaar</span>
+          {% elif e.open_action %}
+          <span class="pill green">Herinnering verzonden</span>
+          {% elif e.dossier_incomplete %}
+          <span class="pill amber">Te bewaken</span>
+          {% else %}
+          <span class="pill" style="color:var(--dim);background:var(--panel-alt)">Compleet</span>
+          {% endif %}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M9 6l6 6-6 6" stroke="#C4BFB2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </a>
+        {% else %}
+        <div class="row">
+          <div class="row-sub">Geen deadlines binnen 14 dagen.</div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- weekday chart -->
+      <div class="card card-pad">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+          <span style="font-size:15px;font-weight:600">Verwerking per dag</span>
+          <div style="display:flex;gap:14px;font-size:11.5px;color:var(--muted)">
+            <span style="display:flex;align-items:center;gap:6px"><span
+                style="width:10px;height:10px;border-radius:3px;background:var(--green);display:inline-block"></span>Automatisch</span>
+            <span style="display:flex;align-items:center;gap:6px"><span
+                style="width:10px;height:10px;border-radius:3px;background:#D9CFB8;display:inline-block"></span>Handmatig</span>
+          </div>
+        </div>
+        {% set peak = stats.weekday_bars | map(attribute='auto') | list %}
+        {% set totals = [] %}
+        {% for b in stats.weekday_bars %}{% if totals.append(b.auto + b.manual) %}{% endif %}{% endfor %}
+        {% set max_total = totals | max if totals and totals | max > 0 else 1 %}
+        <div
+          style="display:flex;align-items:flex-end;justify-content:space-between;gap:14px;height:150px;padding:0 4px">
+          {% for b in stats.weekday_bars %}
+          <div
+            style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:flex-end{% if b.auto + b.manual == 0 %};opacity:.5{% endif %}">
+            {% if b.auto + b.manual > 0 %}
+            <div
+              style="width:100%;max-width:42px;display:flex;flex-direction:column;border-radius:6px 6px 0 0;overflow:hidden">
+              <div style="height:{{ (b.manual / max_total * 118) | round | int }}px;background:#D9CFB8"></div>
+              <div style="height:{{ (b.auto / max_total * 118) | round | int }}px;background:var(--green)"></div>
+            </div>
+            {% else %}
+            <div style="width:100%;max-width:42px;height:8px;border-radius:6px 6px 0 0;background:#E6DFCD"></div>
+            {% endif %}
+            <span class="num"
+              style="font-size:11px;{% if b.is_today %}color:var(--ink);font-weight:600{% else %}color:var(--faint){% endif %}">{{
+              b.label }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <!-- follow-up approvals (FR-30/31) -->
+      <div class="card">
+        <div class="card-h">
+          <span class="card-title">Opvolging · goed te keuren
+            {% if drafts %}<span class="num pill green">{{ drafts | length }}</span>{% endif %}
+          </span>
+          <a href="/opvolging" style="font-size:12.5px;color:var(--green);font-weight:600">Alles bekijken →</a>
+        </div>
+        {% for action in drafts %}
+        {% if loop.first %}
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border-row)">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <a href="/opvolging/{{ action.client_id }}" style="font-size:13px;font-weight:600;color:var(--ink)">{{
+              action.client.name }}</a>
+            <span style="font-size:11px;color:var(--faint)">{{ action.channel }}</span>
+          </div>
+          <div class="quote" style="margin:9px 0">"{{ action.draft_text }}"</div>
+          <div style="display:flex;gap:8px">
+            <form method="post" action="/actions/{{ action.id }}/approve" style="flex:1;margin:0">
+              <button class="btn primary block" style="font-size:12.5px;padding:8px" type="submit">Goedkeuren &amp;
+                verzenden</button>
+            </form>
+            <a class="btn ghost" style="font-size:12.5px;padding:8px 12px"
+              href="/opvolging/{{ action.client_id }}">Bewerk</a>
+          </div>
+        </div>
+        {% else %}
+        <a class="row clickable" href="/opvolging/{{ action.client_id }}">
+          <div class="row-main">
+            <div class="row-title" style="font-size:13px">{{ action.client.name }}</div>
+            <div class="row-sub">{{ action.reason }}</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M9 6l6 6-6 6" stroke="#C4BFB2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </a>
+        {% endif %}
+        {% else %}
+        <div class="row">
+          <div class="row-sub">Geen opvolgberichten te keuren.</div>
+        </div>
+        {% endfor %}
+      </div>
+
+
+
+      <!-- intake feed (FR-01..07) -->
+      <div class="card">
+        <div class="card-h"><span class="card-title">Intake vandaag</span></div>
+        <div style="padding:6px 0">
+          {% for item in recent_intake %}
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 18px">
+            <span class="chip {{ item.channel if item.channel in ['email','whatsapp','upload'] else 'email' }}">{{
+              item.channel | upper }}</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                {{ item.attachments[0].filename if item.attachments else item.subject }} · {{ item.client.name if
+                item.client else item.sender }}
+              </div>
+            </div>
+            {% if item.match_status == 'matched' %}
+            <span style="font-size:11px;color:var(--success);font-weight:600;display:flex;align-items:center;gap:4px">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                <path d="M5 12l5 5 9-11" stroke="#2F8A5B" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
+              </svg>gematcht
+            </span>
+            {% else %}
+            <span style="font-size:11px;color:var(--amber);font-weight:600">? bevestig</span>
+            {% endif %}
+          </div>
+          {% else %}
+          <div style="padding:14px 18px;font-size:12.5px;color:var(--faint)">Nog geen intake vandaag.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

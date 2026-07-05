@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}BoekVastAI{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+<script src="/static/htmx.min.js"></script>
+</head>
+<!-- hx-boost: interne links en formulieren wisselen views via AJAX (geen page
+     reload); URL en back/forward-knoppen blijven gewoon werken. -->
+<body hx-boost="true">
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 4h9a3 3 0 0 1 3 3v13l-4.5-3-4.5 3V7" stroke="#EFEBE2" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"/><path d="M9.5 10.5l2 2 4-4.5" stroke="#8FD3B6" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div style="line-height:1">
+        <div class="num brand-name">BoekVast<span style="color:var(--green)">AI</span></div>
+        <div class="brand-sub">WORKFLOW-LAAG</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <a class="nav-item {% if active == 'dashboard' %}active{% endif %}" href="/">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="9" rx="1.6" stroke="currentColor" stroke-width="1.6"/><rect x="14" y="3" width="7" height="5" rx="1.6" stroke="currentColor" stroke-width="1.6"/><rect x="14" y="12" width="7" height="9" rx="1.6" stroke="currentColor" stroke-width="1.6"/><rect x="3" y="16" width="7" height="5" rx="1.6" stroke="currentColor" stroke-width="1.6"/></svg>
+        <span>Dashboard</span>
+      </a>
+      <a class="nav-item disabled" title="Volgt na pilotfeedback">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 7l9 6 9-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.6"/></svg>
+        <span>Intake</span>
+        <span class="num nav-count">{{ nav.intake }}</span>
+      </a>
+      <a class="nav-item {% if active == 'review' %}active{% endif %}" href="/review">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 11l2.5 2.5L16 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="4" width="18" height="16" rx="2.4" stroke="currentColor" stroke-width="1.6"/></svg>
+        <span>Review</span>
+        {% if nav.review %}<span class="num nav-count pill-amber">{{ nav.review }}</span>{% endif %}
+      </a>
+      <details class="nav-drawer" {% if active in ['klanten', 'dossiers'] %}open{% endif %} style="margin:0;padding:0">
+        <summary class="nav-item {% if active in ['klanten', 'dossiers'] %}active{% endif %}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.4" stroke="currentColor" stroke-width="1.6"/><path d="M3.5 19c.8-3 2.9-4.5 5.5-4.5s4.7 1.5 5.5 4.5M16 5.5a3.4 3.4 0 0 1 0 5M18.5 19c-.4-1.9-1.3-3.2-2.6-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <span>Klanten</span>
+          <svg class="nav-chevron {% if active in ['klanten', 'dossiers'] %}open{% endif %}" width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </summary>
+        <div class="subnav">
+          <a class="subnav-item {% if active == 'klanten' %}active{% endif %}" href="/klanten">Overzicht</a>
+          <a class="subnav-item {% if active == 'dossiers' %}active{% endif %}" href="/dossiers">Dossiers</a>
+        </div>
+      </details>
+
+      <a class="nav-item disabled" title="Volgt na pilotfeedback">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 20V9M12 20V4M19 20v-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span>Rapport</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <a class="nav-item disabled" title="Volgt na pilotfeedback">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.6"/><path d="M12 3.5v2M12 18.5v2M20.5 12h-2M5.5 12h-2M18 6l-1.4 1.4M7.4 16.6L6 18M18 18l-1.4-1.4M7.4 7.4 6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span>Instellingen</span>
+      </a>
+      <div class="org-card">
+        <div class="num avatar">{{ org.name.split(' ')[-2:] | map('first') | join('') | upper }}</div>
+        <div style="line-height:1.25;min-width:0">
+          <div style="font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ org.name }}</div>
+          <div style="font-size:11px;color:var(--faint)">{{ org.region }} · {{ org.employee_count }} medewerkers</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#9A9D91" stroke-width="1.7"/><path d="M20 20l-3.5-3.5" stroke="#9A9D91" stroke-width="1.7" stroke-linecap="round"/></svg>
+        Zoek klant, factuur of afzender…
+      </div>
+      <div class="status-pill"><span class="dot" style="background:#2F9E6A"></span>Alle systemen actief</div>
+      <button class="icon-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 8a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6z" stroke="#5C6058" stroke-width="1.6" stroke-linejoin="round"/><path d="M10 19a2 2 0 0 0 4 0" stroke="#5C6058" stroke-width="1.6"/></svg>
+      </button>
+      <div class="num user-chip">{{ user.initials }}</div>
+    </header>
+
+    <div class="scroll">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+</div>
+</body>
+</html>
