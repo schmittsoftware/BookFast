@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block title %}Dossier · {{ case.client.name }} · BoekVastAI{% endblock %}
+{% block content %}
+<div class="page" style="padding-top:24px">
+  <div class="crumbs">
+    <a href="/dossiers">Dossiers</a><span>/</span><span style="color:var(--dim)">{{ case.client.name }}</span>
+  </div>
+
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px">
+    <div style="display:flex;gap:15px;align-items:center">
+      <div class="num" style="width:52px;height:52px;border-radius:13px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;flex:none">{{ case.client.name[:2] | upper }}</div>
+      <div>
+        <h1 class="page-title" style="font-size:23px">{{ case.client.name }}</h1>
+        <div style="display:flex;gap:14px;margin-top:7px;font-size:12.5px;color:var(--muted);flex-wrap:wrap">
+          {% if case.client.vat_number %}<span class="num">BTW {{ case.client.vat_number }}</span><span>·</span>{% endif %}
+          {% if case.client.bookkeeping_software %}<span>Boekhoudpakket: {{ case.client.bookkeeping_software }}</span><span>·</span>{% endif %}
+          {% if case.client.client_since %}<span>Klant sinds {{ case.client.client_since | short_date }} {{ case.client.client_since.year }}</span>{% endif %}
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:9px">
+      <div class="btn ghost">{{ period_label }}
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="#9A9D91" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="btn primary" title="Export volgt (FR-42)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Exporteer dossier (PDF)
+      </div>
+      {% if edit %}
+      <a class="btn primary" href="/dossiers/{{ case.id }}" style="font-size:12.5px;padding:8px 14px;background:#2F8A5B">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-11" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Klaar met bewerken
+      </a>
+      {% else %}
+      <a class="btn ghost" href="/dossiers/{{ case.id }}?edit=1" style="font-size:12.5px;padding:8px 14px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        Bewerken
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- summary tiles (FR-41) -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr) 1.3fr;gap:14px;margin-bottom:16px">
+    <div class="card" style="padding:16px;border-radius:13px">
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-weight:500;margin-bottom:8px"><span class="dot" style="background:var(--success)"></span>Binnen &amp; geverifieerd</div>
+      <div class="num" style="font-size:27px;font-weight:600">{{ s.verified }}</div>
+    </div>
+    <div class="card" style="padding:16px;border-radius:13px">
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-weight:500;margin-bottom:8px"><span class="dot" style="background:#C78A28"></span>In review</div>
+      <div class="num" style="font-size:27px;font-weight:600">{{ s.in_review }}</div>
+    </div>
+    <div class="card" style="padding:16px;border-radius:13px">
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-weight:500;margin-bottom:8px"><span class="dot" style="background:var(--red)"></span>Ontbreekt nog</div>
+      <div class="num" style="font-size:27px;font-weight:600">{{ s.missing }}</div>
+    </div>
+    <div style="background:var(--green);border-radius:13px;padding:16px;color:#fff;display:flex;align-items:center;gap:16px">
+      <div style="position:relative;width:58px;height:58px;flex:none">
+        <svg width="58" height="58" viewBox="0 0 58 58">
+          <circle cx="29" cy="29" r="24" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="6"/>
+          <circle cx="29" cy="29" r="24" fill="none" stroke="#8FD3B6" stroke-width="6" stroke-linecap="round"
+                  stroke-dasharray="150.8" stroke-dashoffset="{{ (150.8 * (1 - s.progress_pct / 100)) | round(1) }}" transform="rotate(-90 29 29)"/>
+        </svg>
+        <div class="num" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600">{{ s.progress_pct }}%</div>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:3px">Dossier-voortgang</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.75);line-height:1.5">
+          {{ s.items | length }} van {{ s.expected_total }} documenten binnen<br>
+          {% if s.missing == 0 and s.in_review == 0 %}Klaar voor afsluiting{% else %}Klaar voor afsluiting bij {{ s.missing + s.in_review }} item{% if s.missing + s.in_review > 1 %}s{% endif %}{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:16px;align-items:start">
+    <!-- document list -->
+    <div class="card">
+      <div class="card-h"><span class="card-title">Documenten · {{ period_label | lower }}</span></div>
+      {% for item in s.items %}
+      {% set ext = item.extractions[0] if item.extractions else None %}
+      {% set in_review = item.status == 'needs_review' %}
+      {% set amount = None %}
+      {% if ext %}{% for f in ext.fields %}{% if f.name == 'totaalbedrag' %}{% set amount = f.value %}{% endif %}{% endfor %}{% endif %}
+      <a class="row {% if in_review %}clickable{% endif %}" {% if in_review %}href="/review/{{ item.id }}" style="background:#FDF9F1"{% endif %}>
+        <div class="row-icon {% if in_review %}warn{% else %}doc{% endif %}" style="width:34px;height:34px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M7 3h7l4 4v14H7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 3v4h4" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="row-main">
+          <div class="row-title">{{ ext.doc_type | capitalize if ext else 'Document' }}{% if item.subject %} · {{ item.subject }}{% endif %}</div>
+          <div class="row-sub">{{ item.received_at | short_date }} · {{ item.channel }}{% if in_review and ext %}{% set worst = lowest_field(item) %}{% if worst and worst.confidence is not none %} · {{ worst.label | lower }} onzeker{% endif %}{% endif %}</div>
+        </div>
+        {% if ext %}{% for f in ext.fields %}{% if f.name == 'totaalbedrag' %}<span class="num" style="font-size:13px;font-weight:600">{{ f.value }}</span>{% endif %}{% endfor %}{% endif %}
+        {% if in_review %}
+        <span class="pill amber">In review</span>
+        {% else %}
+        <span class="pill green" style="display:flex;align-items:center;gap:4px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-11" stroke="#2F8A5B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Geverifieerd
+        </span>
+        {% endif %}
+      </a>
+      {% endfor %}
+      {% for exp in case.expected_docs if exp.status == 'missing' %}
+      <div class="row" style="padding:15px 18px;background:repeating-linear-gradient(45deg,#FBF6F5,#FBF6F5 8px,#F8F0EF 8px,#F8F0EF 16px)">
+        <div style="width:34px;height:34px;border-radius:8px;border:1.5px dashed #D89A91;color:var(--red);display:flex;align-items:center;justify-content:center;flex:none">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <div class="row-main">
+          <div class="row-title" style="color:var(--red)">{{ exp.label }} — ontbreekt</div>
+          <div class="row-sub" style="color:#B07C74">Verwacht: {{ 'maandelijks' if exp.rule == 'monthly' else exp.rule }}{% if s.open_actions %} · opvolging loopt{% endif %}</div>
+        </div>
+        <span class="pill red">Ontbreekt</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="col">
+      <!-- open follow-up (FR-31/32) -->
+      {% if not s.open_actions %}
+      <div class="card" style="padding:16px 18px;text-align:center">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px">Geen actieve opvolging voor dit dossier.</div>
+        <form method="post" action="/dossiers/{{ case.id }}/followup" style="margin:0">
+          <button type="submit" class="btn ghost" style="font-size:12px;padding:6px 12px">Nieuwe opvolging aanmaken</button>
+        </form>
+      </div>
+      {% else %}
+        {% for action in s.open_actions %}
+        <div class="card">
+          <div class="card-h"><span class="card-title">Openstaande opvolging</span></div>
+          <div style="padding:16px 18px">
+            <div class="quote" style="border-radius:10px;padding:11px 13px;line-height:1.55">"{{ action.draft_text }}"</div>
+            <div style="margin-top:16px;display:flex;flex-direction:column">
+              <div style="display:flex;gap:11px;align-items:flex-start">
+                <div style="display:flex;flex-direction:column;align-items:center">
+                  <span class="dot" style="width:11px;height:11px;background:{% if action.sent_at %}var(--success){% else %}#C4BFB2{% endif %};margin-top:2px"></span>
+                  <span style="width:2px;height:26px;background:#D9CFB8"></span>
+                </div>
+                <div style="margin-top:-1px">
+                  <div style="font-size:12.5px;font-weight:600{% if not action.sent_at %};color:var(--faint){% endif %}">{% if action.sent_at %}Verzonden{% else %}Wacht op goedkeuring{% endif %}</div>
+                  <div style="font-size:11px;color:var(--faint)">{% if action.sent_at %}{{ action.sent_at | short_date }} · {{ action.channel }} · na goedkeuring {{ action.approved_by }}{% else %}concept — FR-31{% endif %}</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:11px;align-items:flex-start">
+                <div style="display:flex;flex-direction:column;align-items:center">
+                  <span class="dot" style="width:11px;height:11px;background:{% if action.opened_at %}var(--success){% else %}transparent{% endif %};{% if not action.opened_at %}border:2px solid #C4BFB2;width:7px;height:7px;{% endif %}margin-top:2px"></span>
+                  <span style="width:2px;height:26px;background:var(--border-soft)"></span>
+                </div>
+                <div style="margin-top:-1px">
+                  <div style="font-size:12.5px;font-weight:600{% if not action.opened_at %};color:var(--faint){% endif %}">Geopend</div>
+                  <div style="font-size:11px;color:var(--faint)">{% if action.opened_at %}{{ action.opened_at | short_date }}{% else %}nog niet{% endif %}</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:11px;align-items:flex-start">
+                <div style="display:flex;flex-direction:column;align-items:center">
+                  <span style="width:7px;height:7px;border-radius:50%;border:2px solid #C4BFB2;background:var(--panel);flex:none;margin-top:2px"></span>
+                </div>
+                <div style="margin-top:-1px">
+                  <div style="font-size:12.5px;font-weight:600;color:var(--faint)">Nog niet opgelost</div>
+                  <div style="font-size:11px;color:var(--faint)">wacht op document</div>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:14px">
+              <a href="/opvolging/{{ case.client_id }}" class="btn ghost" style="display:block;text-align:center;font-size:12.5px;padding:8px">Open in opvolgingspaneel</a>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% endif %}
+
+      <!-- activity (NFR-03) -->
+      <div class="card">
+        <div class="card-h"><span class="card-title">Activiteit</span></div>
+        <div style="padding:6px 0">
+          {% for entry in s.activity %}
+          <div style="display:flex;gap:11px;padding:10px 18px;align-items:flex-start">
+            {% if entry.actor == 'Systeem' %}
+            <div style="width:26px;height:26px;border-radius:7px;background:var(--green-soft2);color:var(--green);display:flex;align-items:center;justify-content:center;flex:none">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 3l2 2 4-4M20 8v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7" stroke="#0F5C43" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            {% else %}
+            <div class="num" style="width:26px;height:26px;border-radius:7px;background:#B45410;color:#fff;font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none">{{ entry.actor[:2] | upper }}</div>
+            {% endif %}
+            <div style="font-size:12px;color:var(--dim);line-height:1.45">
+              <b style="color:var(--ink)">{{ entry.actor }}</b> {{ entry.detail }}
+              <div style="font-size:11px;color:var(--faint);margin-top:1px">{{ entry.created_at | ago }}</div>
+            </div>
+          </div>
+          {% else %}
+          <div style="padding:14px 18px;font-size:12.5px;color:var(--faint)">Nog geen activiteit.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

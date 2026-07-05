@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Deadlines · {{ client.name }} · BoekVastAI{% endblock %}
+
+{% block content %}
+<div class="page" style="padding-top:24px">
+  <div class="crumbs">
+    <a href="/deadlines">Deadlines</a><span>/</span><span style="color:var(--dim)">{{ client.name }}</span>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:15px;margin-bottom:20px">
+    <div class="num"
+      style="width:52px;height:52px;border-radius:13px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;flex:none">
+      {{ client.name[:2] | upper }}</div>
+    <div>
+      <h1 class="page-title" style="font-size:23px">{{ client.name }}</h1>
+      <div style="display:flex;gap:14px;margin-top:7px;font-size:12.5px;color:var(--muted);flex-wrap:wrap">
+        <span>{{ client.rechtsvorm or client.entity_type }}</span><span>·</span>
+        <span>btw {{ client.btw_regime }}</span>
+        {% if client.vat_number %}<span>·</span><span class="num">BTW {{ client.vat_number }}</span>{% endif %}
+      </div>
+    </div>
+    <nav class="seg" style="margin-left:auto" aria-label="Wissel view">
+      <a class="active" href="/deadlines/{{ client.id }}">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.6" />
+          <path d="M8 3v4M16 3v4M3 10h18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+        </svg>
+        Deadlines
+      </a>
+      <a href="/opvolging/{{ client.id }}">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+          <path d="M21 11.5a8.4 8.4 0 0 1-11.9 7.6L3 21l1.9-6.1A8.5 8.5 0 1 1 21 11.5z" stroke="currentColor"
+            stroke-width="1.6" stroke-linejoin="round" />
+        </svg>
+        Opvolging
+      </a>
+    </nav>
+  </div>
+
+  <div class="card">
+    <div class="card-h">
+      <span class="card-title">Fiscale kalender · komende 90 dagen</span>
+      <span style="font-size:11px;color:var(--faint)">PB- en VA-data indicatief</span>
+    </div>
+    {% for e in entries %}
+    <div class="row" {% if e.days_left <=14 and not e.done %}style="background:#FDF9F1" {% endif %}>
+      <div class="date-slot">
+        <div class="num"
+          style="font-size:17px;font-weight:600;{% if e.days_left <= 7 and not e.done %}color:var(--red){% elif e.days_left <= 14 and not e.done %}color:var(--amber){% endif %}">
+          {{ e.due.strftime('%d/%m') }}</div>
+        <div style="font-size:10px;color:var(--faint)">{% if e.days_left == 0 %}vandaag{% else %}{{ e.days_left }}d{%
+          endif %}</div>
+      </div>
+
+      <div class="row-main">
+        <div class="row-title">{{ e.label }} · {{ e.period }}</div>
+        <div class="row-sub">
+          {% if e.done %}
+          Afgehandeld
+          {% elif e.dossier_incomplete %}
+          <span class="dot"
+            style="background:var(--amber);width:6px;height:6px;display:inline-block;margin-right:4px;vertical-align:1px"></span>
+          Ontbreekt: {{ e.missing_labels[:2] | join(', ') }}{% if e.missing_labels | length > 2 %} +{{ e.missing_labels
+          | length - 2 }}{% endif %}
+          {% if e.case %} · <a href="/dossiers/{{ e.case.id }}" style="color:var(--green);font-weight:600">open
+            dossier</a>{% endif %}
+          {% else %}
+          Dossier compleet · klaar om af te vinken
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="status-slot">
+        {% if e.done %}
+        <span class="pill green" style="display:flex;align-items:center;gap:4px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+            <path d="M5 12l5 5 9-11" stroke="#2F8A5B" stroke-width="2.2" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>Afgehandeld
+        </span>
+        {% elif e.open_action and e.open_action.status == 'draft' %}
+        <a class="pill amber" href="/opvolging/{{ e.client.id }}" title="Concept wacht op goedkeuring">Concept
+          opvolging</a>
+        {% elif e.open_action %}
+        <a class="pill green" href="/opvolging/{{ e.client.id }}" title="Herinnering verzonden">Herinnering
+          verzonden</a>
+        {% elif e.dossier_incomplete %}
+        <a class="pill amber" href="/opvolging/{{ e.client.id }}" title="Bekijk opvolging voor deze klant">Wordt
+          opgevolgd</a>
+        {% endif %}
+      </div>
+
+      {% if not e.done %}
+      <div class="row-actions">
+        {% if not e.open_action %}
+        <form method="post" action="/deadlines/draft" style="margin:0">
+          <input type="hidden" name="client_id" value="{{ e.client.id }}">
+          <input type="hidden" name="rule_key" value="{{ e.rule_key }}">
+          <input type="hidden" name="period" value="{{ e.period }}">
+          <button class="btn ghost sm" type="submit" title="Stel een herinnering op — verzending pas na goedkeuring">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor"
+                stroke-width="1.7" stroke-linejoin="round" />
+            </svg>
+            Maak concept
+          </button>
+        </form>
+        {% endif %}
+        <form method="post" action="/deadlines/done" style="margin:0">
+          <input type="hidden" name="client_id" value="{{ e.client.id }}">
+          <input type="hidden" name="rule_key" value="{{ e.rule_key }}">
+          <input type="hidden" name="period" value="{{ e.period }}">
+          <button class="btn ghost sm" type="submit">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+              <path d="M5 12l5 5 9-11" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+            Vink af
+          </button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="row">
+      <div class="row-sub">Geen deadlines binnen de horizon.</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

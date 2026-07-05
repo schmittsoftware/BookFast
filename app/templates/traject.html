@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% block title %}{{ kind_labels[t.kind] }} · {{ t.client.name }} · BoekVastAI{% endblock %}
+{% block content %}
+<div class="page" style="padding-top:24px">
+  <div class="crumbs">
+    <a href="/klanten">Klanten</a><span>/</span>
+    <a href="/klanten/{{ t.kind }}">{{ kind_labels[t.kind] }}</a><span>/</span>
+    <span style="color:var(--dim)">{{ t.client.name }}</span>
+  </div>
+
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px">
+    <div style="display:flex;gap:15px;align-items:center">
+      <div class="num" style="width:52px;height:52px;border-radius:13px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;flex:none">{{ t.client.name[:2] | upper }}</div>
+      <div>
+        <h1 class="page-title" style="font-size:23px">{{ t.client.name }}</h1>
+        <div style="display:flex;gap:14px;margin-top:7px;font-size:12.5px;color:var(--muted);flex-wrap:wrap">
+          <span style="font-weight:600;color:var(--green)">{{ kind_labels[t.kind] }}</span>
+          {% if t.kind == 'conversie' %}
+          <span>·</span><span>{{ t.meta.get('van_vorm', '?') }} → <b>{{ t.meta.get('naar_vorm', '?') }}</b></span>
+          {% elif t.kind == 'stopzetting' %}
+          <span>·</span><span>{{ t.meta.get('type', 'faillissement') }}</span>
+          {% elif t.meta.get('risk_level') %}
+          <span>·</span><span>risicoprofiel <b>{{ t.meta.get('risk_level') }}</b></span>
+          {% endif %}
+          {% if t.client.vat_number %}<span>·</span><span class="num">BTW {{ t.client.vat_number }}</span>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- top-right toolbar: progress · status · edit toggle -->
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="width:130px">
+        <div class="meter"><div style="width:{{ pct }}%"></div></div>
+        <div style="font-size:11px;color:var(--faint);margin-top:5px;text-align:right" class="num">{{ done }} van {{ total }} stappen</div>
+      </div>
+      {% if t.status == 'afgerond' %}<span class="pill green">Afgerond</span>{% else %}<span class="pill amber">Bezig</span>{% endif %}
+      {% if edit %}
+      <a class="btn primary" href="/trajecten/{{ t.id }}" style="font-size:12.5px;padding:8px 14px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-11" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Klaar met bewerken
+      </a>
+      {% else %}
+      <a class="btn ghost" href="/trajecten/{{ t.id }}?edit=1" style="font-size:12.5px;padding:8px 14px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        Bewerken
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if t.kind == 'stopzetting' and t.client.status != 'actief' %}
+  <div style="display:flex;align-items:center;gap:10px;background:var(--red-bg);border:1px solid var(--red-border);border-radius:12px;padding:11px 15px;margin-bottom:16px;font-size:12.5px;color:var(--red)">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/></svg>
+    Deze klant staat op <b>{{ t.client.status }}</b> — deadline-bewaking en automatische herinneringen zijn stopgezet.
+  </div>
+  {% endif %}
+
+  <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:16px;align-items:start">
+    <!-- checklist -->
+    <div class="card">
+      <div class="card-h"><span class="card-title">Checklist</span>
+        {% if edit %}
+        <span style="font-size:11px;color:var(--amber);font-weight:600;display:flex;align-items:center;gap:5px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+          Bewerkmodus actief
+        </span>
+        {% else %}
+        <span style="font-size:11px;color:var(--faint)">alleen-lezen · klik "Bewerken" om aan te passen</span>
+        {% endif %}
+      </div>
+      {% for step in t.steps %}
+      <div class="row" style="align-items:flex-start">
+        {% if step.status in terminal %}
+        <div class="row-icon doc" style="width:34px;height:34px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        {% elif step.status == 'open' %}
+        <div class="row-icon" style="width:34px;height:34px;border:1.5px dashed var(--border);color:var(--faint)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+        {% else %}
+        <div class="row-icon warn" style="width:34px;height:34px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.6"/><path d="M12 7.5V12l3 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+        {% endif %}
+        <div class="row-main">
+          <div class="row-title">{{ step.label }}</div>
+          <div class="row-sub">{{ step.kind }} ·
+            {% if step.status == 'open' %}nog te starten{% else %}{{ step.status }}{% endif %}
+            {% if step.inbound_item_id %} · document gekoppeld{% endif %}
+          </div>
+
+          {% if step.kind == 'opdrachtbrief' and step.note %}
+          <details style="margin-top:8px">
+            <summary style="font-size:12px;color:var(--green);font-weight:600;cursor:pointer">Bekijk concept-opdrachtbrief</summary>
+            <pre style="font-size:11.5px;line-height:1.55;background:var(--panel-alt);border:1px solid var(--border-soft);border-radius:9px;padding:12px;white-space:pre-wrap;margin:8px 0 0;font-family:inherit">{{ step.note }}</pre>
+          </details>
+          {% elif step.note and step.kind != 'opdrachtbrief' %}
+          <div style="font-size:11.5px;color:var(--faint);margin-top:6px">{{ step.note }}</div>
+          {% endif %}
+
+          {% if edit %}
+          <!-- actions per kind (alleen in bewerkmodus) -->
+          <div style="display:flex;gap:7px;margin-top:9px;flex-wrap:wrap">
+            {% if step.kind == 'document' %}
+              {% if step.status == 'open' %}
+              <form method="post" action="/trajecten/steps/{{ step.id }}/request" style="margin:0">
+                <button class="btn ghost" style="font-size:11.5px;padding:6px 10px" type="submit">Opvragen bij klant (concept)</button>
+              </form>
+              {% endif %}
+              {% if step.status != 'ontvangen' %}
+              <form method="post" action="/trajecten/steps/{{ step.id }}/status" style="margin:0">
+                <input type="hidden" name="status" value="ontvangen">
+                <button class="btn ghost" style="font-size:11.5px;padding:6px 10px" type="submit">Markeer ontvangen</button>
+              </form>
+              {% if linkable and not step.inbound_item_id %}
+              <form method="post" action="/trajecten/steps/{{ step.id }}/link" style="margin:0;display:flex;gap:6px">
+                <select name="item_id" style="font-size:11.5px;border:1px solid var(--border);border-radius:8px;padding:5px 8px;background:#fff;max-width:180px">
+                  {% for it in linkable %}<option value="{{ it.id }}">{{ it.subject or it.channel }} · {{ it.received_at | short_date }}</option>{% endfor %}
+                </select>
+                <button class="btn ghost" style="font-size:11.5px;padding:6px 10px" type="submit">Koppel document</button>
+              </form>
+              {% endif %}
+              {% endif %}
+            {% elif step.kind == 'beslissing' %}
+              {% if step.status == 'open' %}
+              <form method="post" action="/trajecten/{{ t.id }}/risk" style="margin:0;display:flex;gap:6px">
+                {% for level in ['laag', 'standaard', 'hoog'] %}
+                <button class="btn ghost" style="font-size:11.5px;padding:6px 10px" name="level" value="{{ level }}" type="submit">{{ level | capitalize }}</button>
+                {% endfor %}
+              </form>
+              {% endif %}
+            {% elif step.kind == 'opdrachtbrief' %}
+              {% if step.status == 'open' %}
+              <form method="post" action="/trajecten/steps/{{ step.id }}/opdrachtbrief" style="margin:0">
+                <button class="btn primary" style="font-size:11.5px;padding:6px 12px" type="submit">Stel opdrachtbrief op</button>
+              </form>
+              {% elif step.status == 'opgesteld' %}
+              <form method="post" action="/trajecten/steps/{{ step.id }}/status" style="margin:0">
+                <input type="hidden" name="status" value="ondertekend">
+                <button class="btn ghost" style="font-size:11.5px;padding:6px 10px" type="submit">Markeer ondertekend</button>
+              </form>
+              {% endif %}
+            {% elif step.kind == 'mandaat' %}
+              {% if step.status == 'open' %}
+              <form method="post" action="/trajecten/steps/{{ step.id }}/status" style="margin:0">
+                <input type="hidden" name="status" value="aangevraagd">
+                <button class="btn ghost" style="font-size:11.5px;padding:6px 10px" type="submit">Aangevraagd</button>
+              </form>
+              {% elif step.status == 'aangevraagd' %}
+              <form method="post" action="/trajecten/steps/{{ step.id }}/status" style="margin:0">
+                <input type="hidden" name="status" value="actief">
+                <button class="btn ghost" style="font-size:11.5px;padding:6px 10px" type="submit">Markeer actief</button>
+              </form>
+              {% endif %}
+            {% elif step.kind == 'taak' %}
+              {% if step.status == 'open' %}
+              <form method="post" action="/trajecten/steps/{{ step.id }}/status" style="margin:0">
+                <input type="hidden" name="status" value="bezig">
+                <button class="btn ghost" style="font-size:11.5px;padding:6px 10px" type="submit">Markeer bezig</button>
+              </form>
+              {% endif %}
+              {% if step.status != 'afgerond' %}
+              <form method="post" action="/trajecten/steps/{{ step.id }}/status" style="margin:0">
+                <input type="hidden" name="status" value="afgerond">
+                <button class="btn ghost" style="font-size:11.5px;padding:6px 10px" type="submit">Markeer afgerond</button>
+              </form>
+              {% endif %}
+            {% endif %}
+            {% if step.status not in terminal and step.kind in ['document', 'mandaat', 'opdrachtbrief', 'taak'] %}
+            <form method="post" action="/trajecten/steps/{{ step.id }}/status" style="margin:0">
+              <input type="hidden" name="status" value="nvt">
+              <button style="font-size:11.5px;padding:6px 10px;background:none;border:none;color:var(--faint);cursor:pointer;font-family:inherit">n.v.t.</button>
+            </form>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+        {% if step.status in terminal %}<span class="pill green">OK</span>
+        {% elif step.status == 'open' %}<span class="pill" style="color:var(--faint);background:var(--panel-alt)">Open</span>
+        {% else %}<span class="pill amber">{{ step.status | capitalize }}</span>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="col">
+      <div class="card card-pad">
+        <div style="font-size:15px;font-weight:600;margin-bottom:10px">Hoe dit werkt</div>
+        <div style="font-size:12.5px;color:var(--dim);line-height:1.6">
+          {% if t.kind == 'onboarding' %}
+          Documentopvragingen worden als <b>concept</b> aangemaakt en verschijnen bij
+          <a href="/" style="color:var(--green);font-weight:600">Opvolging op het dashboard</a> —
+          er vertrekt niets zonder expliciete goedkeuring (FR-31).
+          Mandaten activeert u zelf via CSAM; het systeem volgt enkel de status op.
+          {% elif t.kind == 'conversie' %}
+          Het systeem volgt de omzettingsstappen op; de juridische handelingen zelf
+          (notaris, publicatie, KBO) gebeuren buiten het systeem. Bij afronding wordt
+          de rechtsvorm van de klant automatisch bijgewerkt — en daarmee ook de
+          deadline-regels die erop steunen.
+          {% else %}
+          Bij de start van dit traject is de klant op status <b>stopzetting</b> gezet:
+          deadline-bewaking en automatische herinneringen stoppen. Het systeem dient
+          nooit zelf iets in (geen e604C, geen KBO) — het bewaakt enkel dat elke stap
+          door een mens wordt afgehandeld. Bij afronding wordt de klant gearchiveerd.
+          {% endif %}
+        </div>
+      </div>
+      {% if t.kind != 'stopzetting' %}
+      <div class="card card-pad">
+        <div style="font-size:15px;font-weight:600;margin-bottom:10px">Aanleverkanaal</div>
+        <div style="font-size:12.5px;color:var(--dim);line-height:1.6">
+          De klant kan documenten aanleveren via het uploadformulier:<br>
+          <a href="/upload/{{ org.upload_token }}" target="_blank" style="color:var(--green);font-weight:600;word-break:break-all">/upload/{{ org.upload_token }}</a><br>
+          Binnenkomende documenten van {{ t.client.name }} kan u in bewerkmodus rechtstreeks aan een stap koppelen.
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

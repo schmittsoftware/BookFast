@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Klanten · BoekVastAI{% endblock %}
+{% block content %}
+<div class="page">
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:24px">
+    <div>
+      <h1 class="page-title" style="font-size:25px">Klanten · Overzicht</h1>
+      <p style="margin:6px 0 0;font-size:13.5px;color:var(--muted)">Klantenbeheer: onboarding, rechtsvorm-conversies en stopzettingen</p>
+    </div>
+    <details class="menu">
+      <summary>
+        <span class="btn primary">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+          Nieuwe klant
+        </span>
+      </summary>
+      <div class="menu-panel">
+        <div style="font-size:14px;font-weight:600;margin-bottom:12px">Nieuwe klant</div>
+        <form method="post" action="/klanten" style="display:flex;flex-direction:column;gap:12px;margin:0">
+          <div>
+            <label style="font-size:12px;color:var(--muted);font-weight:500;display:block;margin-bottom:6px">Naam</label>
+            <input type="text" name="name" required placeholder="Bedrijfsnaam BV">
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--muted);font-weight:500;display:block;margin-bottom:6px">E-mailadres</label>
+            <input type="email" name="email" placeholder="boekhouding@bedrijf.be">
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--muted);font-weight:500;display:block;margin-bottom:6px">BTW-nummer</label>
+            <input type="text" name="vat_number" placeholder="BE 0xxx.xxx.xxx">
+          </div>
+          <div style="display:flex;gap:10px">
+            <div style="flex:1">
+              <label style="font-size:12px;color:var(--muted);font-weight:500;display:block;margin-bottom:6px">Rechtsvorm</label>
+              <select name="rechtsvorm" style="width:100%;font-family:inherit;font-size:13.5px;border:1px solid var(--border);border-radius:8px;padding:9px 11px;background:#fff">
+                <option value="BV">BV</option>
+                <option value="eenmanszaak">Eenmanszaak</option>
+                <option value="VOF">VOF</option>
+                <option value="CommV">CommV</option>
+                <option value="CV">CV</option>
+                <option value="NV">NV</option>
+              </select>
+            </div>
+            <div style="flex:1">
+              <label style="font-size:12px;color:var(--muted);font-weight:500;display:block;margin-bottom:6px">BTW-regime</label>
+              <select name="btw_regime" style="width:100%;font-family:inherit;font-size:13.5px;border:1px solid var(--border);border-radius:8px;padding:9px 11px;background:#fff">
+                <option value="kwartaal">Kwartaal</option>
+                <option value="maand">Maand</option>
+                <option value="geen">Geen / vrijgesteld</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--muted);font-weight:500;display:block;margin-bottom:6px">Boekhoudpakket</label>
+            <input type="text" name="bookkeeping_software" placeholder="Yuki / Silverfin / Exact…">
+          </div>
+          <button class="btn primary block" type="submit">Klant aanmaken &amp; onboarding starten</button>
+          <div style="font-size:11px;color:var(--faint);line-height:1.5">De onboarding-checklist start automatisch vanuit de kantoorconfiguratie.</div>
+        </form>
+      </div>
+    </details>
+  </div>
+
+  <!-- KPI tiles -->
+  <div class="kpi-grid" style="margin-bottom:16px">
+    <div class="kpi">
+      <span class="kpi-label">Actieve klanten</span>
+      <div class="num kpi-value" style="font-size:30px">{{ active_count }}</div>
+      <div class="kpi-foot">{{ clients | length - active_count }} in stopzetting of gearchiveerd</div>
+    </div>
+    <a class="kpi" href="/klanten/onboarding" style="display:block">
+      <span class="kpi-label">Onboarding lopend</span>
+      <div class="num kpi-value" style="font-size:30px">{{ traject_counts.onboarding }}</div>
+      <div class="kpi-foot">antiwitwas · opdrachtbrief · mandaten</div>
+    </a>
+    <a class="kpi" href="/klanten/conversie" style="display:block">
+      <span class="kpi-label">Conversies lopend</span>
+      <div class="num kpi-value" style="font-size:30px">{{ traject_counts.conversie }}</div>
+      <div class="kpi-foot">omzettingen van rechtsvorm</div>
+    </a>
+    <a class="kpi" href="/klanten/stopzetting" style="display:block">
+      <span class="kpi-label">Stopzettingen lopend</span>
+      <div class="num kpi-value" style="font-size:30px">{{ traject_counts.stopzetting }}</div>
+      <div class="kpi-foot">incl. faillissementen</div>
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><span class="card-title">Alle klanten</span></div>
+    {% for client in clients %}
+    {% set open_t = open_trajecten.get(client.id) %}
+    <div class="row">
+      <div class="num" style="width:36px;height:36px;border-radius:9px;background:{% if client.status == 'actief' %}var(--green){% else %}var(--panel-alt);border:1px solid var(--border);color:var(--dim){% endif %};{% if client.status == 'actief' %}color:#fff;{% endif %}display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex:none">{{ client.name[:2] | upper }}</div>
+      <div class="row-main">
+        <div class="row-title">{{ client.name }}</div>
+        <div class="row-sub">
+          {{ client.rechtsvorm or client.entity_type }} · btw {{ client.btw_regime }}{% if client.bookkeeping_software %} · {{ client.bookkeeping_software }}{% endif %}
+        </div>
+      </div>
+      {% if open_t %}
+      <a class="pill amber" href="/trajecten/{{ open_t.id }}" title="Open traject">{{ kind_labels[open_t.kind] }} loopt</a>
+      {% endif %}
+      {% if client.status == 'actief' %}
+      <span class="pill green">Actief</span>
+      {% elif client.status == 'stopzetting' %}
+      <span class="pill red">Stopzetting</span>
+      {% else %}
+      <span class="pill" style="color:var(--dim);background:var(--panel-alt)">Gearchiveerd</span>
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="row"><div class="row-sub">Nog geen klanten.</div></div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

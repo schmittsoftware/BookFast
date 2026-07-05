@@ -1,0 +1,15 @@
+<div class="tabs">
+  <a class="tab {% if subtab == 'overzicht' %}active{% endif %}" href="/klanten">Overzicht</a>
+  <a class="tab {% if subtab == 'onboarding' %}active{% endif %}" href="/klanten/onboarding">
+    Onboarding
+    {% if traject_counts.onboarding %}<span class="num">{{ traject_counts.onboarding }}</span>{% endif %}
+  </a>
+  <a class="tab {% if subtab == 'conversie' %}active{% endif %}" href="/klanten/conversie">
+    Rechtsvorm-conversies
+    {% if traject_counts.conversie %}<span class="num">{{ traject_counts.conversie }}</span>{% endif %}
+  </a>
+  <a class="tab {% if subtab == 'stopzetting' %}active{% endif %}" href="/klanten/stopzetting">
+    Stopzettingen &amp; faillissementen
+    {% if traject_counts.stopzetting %}<span class="num">{{ traject_counts.stopzetting }}</span>{% endif %}
+  </a>
+</div>

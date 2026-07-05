@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px">
+    <h1 class="page-title">Opvolging</h1>
+  </div>
+
+  <div class="card">
+    <div class="card-h">
+      <span class="card-title">Klanten met actieve opvolging</span>
+    </div>
+    {% if summaries %}
+      {% for s in summaries %}
+      <div class="row clickable" onclick="window.location.href='/opvolging/{{ s.client.id }}'">
+        <div class="num" style="width:36px;height:36px;border-radius:9px;background:var(--panel-alt);border:1px solid var(--border);color:var(--dim);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex:none">{{ s.client.name[:2] | upper }}</div>
+        <div class="row-main">
+          <div class="row-title">{{ s.client.name }}</div>
+          <div class="row-sub">
+            {% if s.drafts_count > 0 %}
+            <span style="color:var(--amber)">{{ s.drafts_count }} concept{% if s.drafts_count > 1 %}en{% endif %} klaar voor verzending</span>
+            {% else %}
+            <span style="color:var(--faint)">Alle acties verzonden</span>
+            {% endif %}
+          </div>
+        </div>
+        {% if s.drafts_count > 0 %}
+        <span class="pill amber">Actie vereist</span>
+        {% endif %}
+        {% if s.sent_count > 0 %}
+        <span class="pill" style="color:var(--dim);background:var(--panel-alt)">{{ s.sent_count }} verzonden</span>
+        {% endif %}
+        <svg class="nav-chevron" style="margin-left:8px;color:var(--faint)" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="card-pad" style="color:var(--faint);font-size:13px;text-align:center;padding:30px 18px">Geen klanten met actieve opvolging. Alles is up-to-date!</div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

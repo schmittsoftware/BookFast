@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Opvolging · {{ client.name }} · BoekVastAI{% endblock %}
+
+{% block content %}
+<style>
+  /* Bewerken zonder reload: checkbox-toggle wisselt tekstweergave en formulier. */
+  .edit-toggle { display: none; }
+  .edit-form-container { display: none; margin-top: 10px; }
+  .edit-toggle:checked ~ .edit-form-container { display: flex; flex-direction: column; gap: 8px; }
+  .edit-toggle:checked ~ .message-display { display: none; }
+  .edit-toggle:checked ~ .row-actions { display: none; }
+</style>
+
+<div class="page" style="padding-top:24px">
+  <div class="crumbs">
+    <a href="/opvolging">Opvolging</a><span>/</span><span style="color:var(--dim)">{{ client.name }}</span>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:15px;margin-bottom:20px">
+    <div class="num" style="width:52px;height:52px;border-radius:13px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;flex:none">{{ client.name[:2] | upper }}</div>
+    <div>
+      <h1 class="page-title" style="font-size:23px">{{ client.name }}</h1>
+      <div style="display:flex;gap:14px;margin-top:7px;font-size:12.5px;color:var(--muted);flex-wrap:wrap">
+        <span>{{ client.rechtsvorm or client.entity_type }}</span><span>·</span>
+        <span>btw {{ client.btw_regime }}</span>
+        {% if client.vat_number %}<span>·</span><span class="num">BTW {{ client.vat_number }}</span>{% endif %}
+      </div>
+    </div>
+    <nav class="seg" style="margin-left:auto" aria-label="Wissel view">
+      <a href="/deadlines/{{ client.id }}">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 3v4M16 3v4M3 10h18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Deadlines
+      </a>
+      <a class="active" href="/opvolging/{{ client.id }}">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.4 8.4 0 0 1-11.9 7.6L3 21l1.9-6.1A8.5 8.5 0 1 1 21 11.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        Opvolging
+      </a>
+    </nav>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-h">
+      <span class="card-title">Concepten · goed te keuren
+        {% if drafts %}<span class="num pill amber" style="background:var(--amber-chip)">{{ drafts_count }}</span>{% endif %}
+      </span>
+      <span style="font-size:11px;color:var(--faint)">verzending pas na expliciete goedkeuring (FR-31)</span>
+    </div>
+    {% for action in drafts %}
+    <div class="row" style="align-items:flex-start">
+      <div class="row-icon chat" style="width:34px;height:34px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="row-main">
+        <div class="row-title">{{ action.reason }}</div>
+        <div class="row-sub">
+          via {{ action.channel }}
+          {% if action.case %} · <a href="/dossiers/{{ action.case_id }}" style="color:var(--green);font-weight:600">dossier {{ action.case.period }}</a>{% endif %}
+        </div>
+
+        <input type="checkbox" id="edit-toggle-{{ action.id }}" class="edit-toggle">
+
+        <div class="message-display quote" style="margin-top:9px;white-space:pre-wrap">{{ action.draft_text }}</div>
+
+        <div class="row-actions" style="margin-top:10px">
+          <form method="post" action="/actions/{{ action.id }}/approve" style="margin:0">
+            <button class="btn primary sm" type="submit">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-11" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Goedkeuren &amp; verzenden
+            </button>
+          </form>
+          <label for="edit-toggle-{{ action.id }}" class="btn ghost sm" style="cursor:pointer">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+            Bewerken
+          </label>
+        </div>
+
+        <div class="edit-form-container">
+          <form method="post" action="/actions/{{ action.id }}/approve" style="display:flex;flex-direction:column;gap:8px;margin:0">
+            <textarea name="edited_text" style="width:100%;font-family:inherit;font-size:12.5px;border:1px solid var(--border);border-radius:8px;padding:9px 11px;background:#fff;resize:vertical;min-height:90px">{{ action.draft_text }}</textarea>
+            <div style="display:flex;gap:8px">
+              <button class="btn primary sm" type="submit">Opslaan &amp; verzenden</button>
+              <label for="edit-toggle-{{ action.id }}" class="btn ghost sm" style="cursor:pointer">Annuleren</label>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="row"><div class="row-sub">Geen openstaande concepten voor deze klant.</div></div>
+    {% endfor %}
+  </div>
+
+  <div class="card">
+    <div class="card-h"><span class="card-title">Verzonden berichten</span></div>
+    {% for action in sent %}
+    <div class="row">
+      <div class="row-icon doc" style="width:34px;height:34px;background:var(--panel-alt);color:var(--dim)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="row-main">
+        <div class="row-title">{{ action.reason }}</div>
+        <div class="row-sub">
+          verzonden door {{ action.approved_by }} op {{ action.sent_at | short_date }} via {{ action.channel }}
+          {% if action.case %} · <a href="/dossiers/{{ action.case_id }}" style="color:var(--green);font-weight:600">dossier {{ action.case.period }}</a>{% endif %}
+        </div>
+      </div>
+      <span class="pill green">Verzonden</span>
+    </div>
+    {% else %}
+    <div class="row"><div class="row-sub">Nog geen verzonden berichten.</div></div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

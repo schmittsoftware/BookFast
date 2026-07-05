@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}{{ kind_labels[kind] }} · Klanten · BoekVastAI{% endblock %}
+{% block content %}
+<div class="page">
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:24px">
+    <div>
+      <h1 class="page-title" style="font-size:25px">Klanten · {{ kind_labels[kind] }}</h1>
+      <p style="margin:6px 0 0;font-size:13.5px;color:var(--muted)">
+        {% if kind == 'onboarding' %}Antiwitwas-dossier, opdrachtbrief en mandaten per nieuwe klant
+        {% elif kind == 'conversie' %}Omzettingen van rechtsvorm — checklist per traject, van staat van activa tot publicatie
+        {% else %}Stopzettingen en faillissementen — de klant valt automatisch uit de deadline-bewaking{% endif %}
+      </p>
+    </div>
+    {% if startable %}
+    <details class="menu">
+      <summary>
+        <span class="btn primary">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+          {% if kind == 'onboarding' %}Start onboarding{% elif kind == 'conversie' %}Nieuwe conversie{% else %}Registreer stopzetting{% endif %}
+        </span>
+      </summary>
+      <div class="menu-panel">
+        <div style="font-size:14px;font-weight:600;margin-bottom:12px">
+          {% if kind == 'onboarding' %}Onboarding starten voor bestaande klant
+          {% elif kind == 'conversie' %}Nieuwe conversie starten
+          {% else %}Stopzetting registreren{% endif %}
+        </div>
+        <form method="post" action="/klanten/{{ kind }}/start" style="display:flex;flex-direction:column;gap:12px;margin:0">
+          <div>
+            <label style="font-size:12px;color:var(--muted);font-weight:500;display:block;margin-bottom:6px">Klant</label>
+            <select name="client_id" required style="width:100%;font-family:inherit;font-size:13.5px;border:1px solid var(--border);border-radius:8px;padding:9px 11px;background:#fff">
+              {% for c in startable %}
+              <option value="{{ c.id }}">{{ c.name }} ({{ c.rechtsvorm or c.entity_type }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% if kind == 'conversie' %}
+          <div>
+            <label style="font-size:12px;color:var(--muted);font-weight:500;display:block;margin-bottom:6px">Doelvorm</label>
+            <select name="naar_vorm" required style="width:100%;font-family:inherit;font-size:13.5px;border:1px solid var(--border);border-radius:8px;padding:9px 11px;background:#fff">
+              {% for vorm in rechtsvormen %}
+              <option value="{{ vorm }}" {% if vorm == 'BV' %}selected{% endif %}>{{ vorm }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% elif kind == 'stopzetting' %}
+          <div>
+            <label style="font-size:12px;color:var(--muted);font-weight:500;display:block;margin-bottom:6px">Type</label>
+            <select name="stopzetting_type" style="width:100%;font-family:inherit;font-size:13.5px;border:1px solid var(--border);border-radius:8px;padding:9px 11px;background:#fff">
+              <option value="faillissement">Faillissement</option>
+              <option value="vrijwillige stopzetting">Vrijwillige stopzetting</option>
+            </select>
+          </div>
+          {% endif %}
+          <button class="btn primary block" type="submit">
+            {% if kind == 'stopzetting' %}Registreer &amp; start checklist{% else %}Start traject{% endif %}
+          </button>
+          {% if kind == 'stopzetting' %}
+          <div style="font-size:11px;color:var(--faint);line-height:1.5">De klant gaat op status <b>stopzetting</b>: deadline-bewaking en automatische herinneringen stoppen; de afhandeling loopt via de checklist.</div>
+          {% elif kind == 'conversie' %}
+          <div style="font-size:11px;color:var(--faint);line-height:1.5">Bij afronding wordt de rechtsvorm van de klant automatisch bijgewerkt, inclusief de deadline-regels die erop steunen.</div>
+          {% else %}
+          <div style="font-size:11px;color:var(--faint);line-height:1.5">Nieuwe klanten maakt u aan via <a href="/klanten" style="color:var(--green);font-weight:600">Overzicht</a> — de onboarding start dan automatisch.</div>
+          {% endif %}
+        </form>
+      </div>
+    </details>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-h"><span class="card-title">{{ kind_labels[kind] }}-trajecten</span></div>
+    {% for t, done, total in trajecten_list %}
+    <a class="row clickable" href="/trajecten/{{ t.id }}">
+      <div class="num" style="width:36px;height:36px;border-radius:9px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex:none">{{ t.client.name[:2] | upper }}</div>
+      <div class="row-main">
+        <div class="row-title">{{ t.client.name }}</div>
+        <div class="row-sub">
+          {% if t.kind == 'conversie' %}
+            {{ t.meta.get('van_vorm', '?') }} → <b>{{ t.meta.get('naar_vorm', '?') }}</b>
+          {% elif t.kind == 'stopzetting' %}
+            {{ t.meta.get('type', 'faillissement') }}
+          {% else %}
+            {{ t.client.rechtsvorm or t.client.entity_type }} · btw {{ t.client.btw_regime }}{% if t.meta.get('risk_level') %} · risico {{ t.meta.get('risk_level') }}{% endif %}
+          {% endif %}
+        </div>
+      </div>
+      <div style="width:110px">
+        <div class="meter"><div style="width:{{ (100 * done / total) | round | int if total else 0 }}%"></div></div>
+        <div style="font-size:11px;color:var(--faint);margin-top:5px" class="num">{{ done }} van {{ total }} stappen</div>
+      </div>
+      {% if t.status == 'afgerond' %}
+      <span class="pill green">Afgerond</span>
+      {% else %}
+      <span class="pill amber">Bezig</span>
+      {% endif %}
+    </a>
+    {% else %}
+    <div class="row"><div class="row-sub">Nog geen {{ kind_labels[kind] | lower }}-trajecten.</div></div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

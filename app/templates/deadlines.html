@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Deadlines · BoekVastAI{% endblock %}
+
+{% block content %}
+<div class="page">
+  <div style="margin-bottom:26px">
+    <h1 class="page-title" style="font-size:25px">Deadlines</h1>
+    <p style="margin:6px 0 0;font-size:13.5px;color:var(--muted)">
+      Per klant · herinneringen worden automatisch als concept klaargezet zodra een dossier onvolledig is — goedkeuring blijft verplicht
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-h">
+      <span class="card-title">Klanten met actieve deadlines</span>
+      <span style="font-size:11px;color:var(--faint)">komende 90 dagen</span>
+    </div>
+    {% for client, client_entries in entries_grouped.items() %}
+    {% set blocked = client_entries | selectattr("dossier_incomplete", "equalto", true) | rejectattr("done") | list | length %}
+    {% set soonest = client_entries | rejectattr("done") | map(attribute="days_left") | list %}
+    {% set next_entry = (client_entries | rejectattr("done") | list + client_entries) | first %}
+    <a class="row clickable" href="/deadlines/{{ client.id }}">
+      <div class="date-slot">
+        <div class="num" style="font-size:17px;font-weight:600;{% if soonest and soonest | min <= 7 %}color:var(--red){% elif soonest and soonest | min <= 14 %}color:var(--amber){% endif %}">{{ next_entry.due.strftime('%d/%m') }}</div>
+        <div style="font-size:10px;color:var(--faint)">{% if soonest %}{{ soonest | min }}d{% else %}klaar{% endif %}</div>
+      </div>
+      <div class="num" style="width:36px;height:36px;border-radius:9px;background:var(--panel-alt);border:1px solid var(--border);color:var(--dim);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex:none">{{ client.name[:2] | upper }}</div>
+      <div class="row-main">
+        <div class="row-title">{{ client.name }}</div>
+        <div class="row-sub">
+          {{ client_entries | length }} deadline{% if client_entries | length > 1 %}s{% endif %} · eerstvolgend: {{ next_entry.label }}
+          {% if blocked %} · <span style="color:var(--amber)">{{ blocked }} geblokkeerd door dossier</span>{% endif %}
+        </div>
+      </div>
+      <div class="status-slot">
+        {% if blocked %}
+        <span class="pill amber">{{ blocked }} te bewaken</span>
+        {% else %}
+        <span class="pill green">Dossiers compleet</span>
+        {% endif %}
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="flex:none"><path d="M9 6l6 6-6 6" stroke="#C4BFB2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+    {% else %}
+    <div class="row"><div class="row-sub">Geen deadlines binnen de horizon.</div></div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
