@@ -6,6 +6,18 @@
       "runtimeExecutable": ".venv/bin/uvicorn",
       "runtimeArgs": ["app.main:app", "--port", "8001", "--reload"],
       "port": 8001
+    },
+    {
+      "name": "schmitt-ui",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "/Users/alexanderschmitt/Schmitt Software/schmitt-ui", "--", "--port", "5200"],
+      "port": 5200
+    },
+    {
+      "name": "schmittsoftware-website",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "/Users/alexanderschmitt/Schmitt Software/schmittsoftware/website", "--", "--port", "5199"],
+      "port": 5199
     }
   ]
 }
